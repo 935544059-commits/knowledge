@@ -1757,10 +1757,6 @@ class RetrievalLab {
     // 实现添加到测试集逻辑
   }
 
-  exportResults() {
-    // 实现导出结果逻辑
-  }
-
   clearHistory() {
     this.testHistory = [];
     this.render();
