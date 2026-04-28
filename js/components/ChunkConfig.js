@@ -42,7 +42,10 @@ class ChunkConfig {
     this.container.innerHTML = `
       <div class="chunk-config-wrapper">
         <div class="cc-section">
-          <label class="cc-section-label"><span class="cc-label-icon">⚙️</span>切片策略</label>
+          <label class="cc-section-label">
+            <span class="cc-label-icon">⚙️</span>切片策略
+            <span class="cc-compatibility-hint">⚠️ 若切分策略不兼容当前上传文档格式，系统将默认采用「自动分段」</span>
+          </label>
           <div class="strategy-grid" id="strategy-grid">
             ${strategies.map(s => `
               <div class="strategy-card ${this.config.strategy === s.value ? 'active' : ''}" data-strategy="${s.value}">

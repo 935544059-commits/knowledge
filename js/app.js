@@ -1003,6 +1003,11 @@ class KnowledgeBaseApp {
                 </span>
               </label>
             </div>
+            
+            <!-- 兼容性提示 -->
+            <div class="config-compatibility-hint">
+              ⚠️ 若切分策略不兼容当前文档格式，系统将默认采用「自动分段」。
+            </div>
 
             <!-- 上传区域 -->
             <div class="upload-area" id="up-area">
@@ -1146,6 +1151,11 @@ class KnowledgeBaseApp {
                   <small>为此文档单独指定解析器和切片策略</small>
                 </span>
               </label>
+            </div>
+            
+            <!-- 兼容性提示 -->
+            <div class="config-compatibility-hint">
+              ⚠️ 若切分策略不兼容当前文档格式，系统将默认采用「自动分段」。
             </div>
 
             <!-- 自定义配置区 -->
