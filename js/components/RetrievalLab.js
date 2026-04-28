@@ -952,13 +952,28 @@ class RetrievalLab {
                         <span class="test-set-case-text">${item.query}</span>
                       </div>
                       
-                      <!-- 预期答案区域 - 默认隐藏，鼠标悬浮显示气泡 -->
+                      <!-- 预期答案区域 -->
                       ${item.expected ? `
                         <div class="test-set-case-expected">
-                          <div class="expected-header" title="${this._escapeHtml(item.expected)}">
+                          <div class="expected-header">
                             <span class="test-set-case-label">📋 预期目标:</span>
-                            <span class="expected-bubble-icon">💬</span>
+                            <span class="expected-content">${item.expected.length > 50 ? item.expected.substring(0, 50) + '...' : item.expected}</span>
+                            ${item.expected.length > 50 ? `
+                              <button class="expected-toggle-btn" onclick="app.retrievalLabComponent.toggleExpectedExpand('test-case-${index}-${i}')">
+                                <span class="toggle-icon">▼</span>
+                              </button>
+                            ` : ''}
                           </div>
+                          ${item.expected.length > 50 ? `
+                            <div class="expected-expanded-content" id="expected-expanded-${index}-${i}">
+                              <div class="expanded-body">${this._escapeHtml(item.expected)}</div>
+                              <div class="expanded-footer">
+                                <button class="btn btn-text btn-xs" onclick="app.retrievalLabComponent.toggleExpectedExpand('test-case-${index}-${i}')">
+                                  收起 ▲
+                                </button>
+                              </div>
+                            </div>
+                          ` : ''}
                         </div>
                       ` : ''}
                       
@@ -1518,20 +1533,161 @@ class RetrievalLab {
     const set = this.testSets[setIndex];
     if (!set) return;
     
-    const query = prompt('请输入测试 Query:');
-    if (query) {
-      const expected = prompt('请输入预期答案:');
-      if (expected) {
-        if (!set.items) set.items = [];
-        set.items.push({
-          query,
-          expected,
-          hasRun: false
-        });
-        this.render();
-        this.showMessage('测试用例已添加');
-      }
+    // 创建模态框
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    modal.id = 'add-test-case-modal';
+    modal.innerHTML = `
+      <div class="modal modal-md">
+        <div class="modal-header">
+          <h3 class="modal-title">新增测试用例</h3>
+          <button class="modal-close" onclick="app.retrievalLabComponent.closeAddTestCaseModal()">×</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">
+              测试 Query
+              <span class="required">*</span>
+            </label>
+            <textarea 
+              class="form-textarea" 
+              id="test-case-query" 
+              rows="4" 
+              placeholder="请输入测试查询语句，支持多行输入..."
+            ></textarea>
+            <div class="form-hint">按 Enter 快速提交，Shift + Enter 换行</div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">预期召回的关键内容 (Expected Snippet)（选填）</label>
+            <textarea 
+              class="form-textarea expected-snippet" 
+              id="test-case-expected" 
+              rows="4" 
+              placeholder="请粘贴您认为 AI 应该找到的那段原始文本..."
+            ></textarea>
+            <div class="form-hint">用于后续自动化评估召回准确性</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-default" onclick="app.retrievalLabComponent.closeAddTestCaseModal()">取消</button>
+          <button class="btn btn-primary" id="btn-confirm-add" onclick="app.retrievalLabComponent.confirmAddTestCase(${setIndex})">
+            <span class="btn-text">确定</span>
+          </button>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // 绑定键盘事件
+    const queryTextarea = document.getElementById('test-case-query');
+    if (queryTextarea) {
+      queryTextarea.focus();
+      queryTextarea.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.confirmAddTestCase(setIndex);
+        }
+      });
     }
+  }
+  
+  // 关闭添加测试用例模态框
+  closeAddTestCaseModal() {
+    const modal = document.getElementById('add-test-case-modal');
+    if (modal) {
+      modal.classList.remove('active');
+      setTimeout(() => modal.remove(), 300);
+    }
+  }
+  
+  // 确认添加测试用例
+  confirmAddTestCase(setIndex) {
+    const set = this.testSets[setIndex];
+    if (!set) return;
+    
+    const queryInput = document.getElementById('test-case-query');
+    const expectedInput = document.getElementById('test-case-expected');
+    const confirmBtn = document.getElementById('btn-confirm-add');
+    
+    const query = queryInput?.value?.trim();
+    const expected = expectedInput?.value?.trim() || '';
+    
+    // 校验
+    if (!query) {
+      this.showMessage('请输入测试 Query', 'error');
+      queryInput?.focus();
+      return;
+    }
+    
+    // 设置 loading 状态
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<span class="btn-loading"></span> 提交中...';
+    }
+    
+    // 模拟异步提交
+    setTimeout(() => {
+      if (!set.items) set.items = [];
+      set.items.push({
+        query,
+        expected,
+        hasRun: false,
+        createTime: new Date().toISOString()
+      });
+      
+      // 关闭模态框
+      this.closeAddTestCaseModal();
+      
+      // 刷新测试集抽屉（如果有打开）
+      if (this.testSetDrawerVisible && this.selectedTestSetIndex === setIndex) {
+        this.render();
+        this.bindEvents();
+      }
+      
+      // 显示成功提示
+      this.showMessage('✅ 测试用例添加成功', 'success');
+    }, 300);
+  }
+  
+  // 获取预期目标选项
+  _getExpectedOptions() {
+    const options = [];
+    
+    // 从当前知识库获取文档列表
+    if (this.options.kb && window.documents) {
+      const kbDocs = window.documents[this.options.kb.id] || [];
+      kbDocs.forEach(doc => {
+        options.push({
+          value: `doc:${doc.id}`,
+          label: `📄 ${doc.name}`
+        });
+        
+        // 获取该文档的切片
+        if (window.chunks && window.chunks[doc.id]) {
+          const docChunks = window.chunks[doc.id];
+          docChunks.slice(0, 5).forEach((chunk, idx) => {
+            const preview = chunk.content.substring(0, 50) + (chunk.content.length > 50 ? '...' : '');
+            options.push({
+              value: `chunk:${chunk.id}`,
+              label: `   └─ ✂️ 切片 ${idx + 1}: ${preview}`
+            });
+          });
+        }
+      });
+    }
+    
+    // 如果没有可用选项，添加一些示例
+    if (options.length === 0) {
+      options.push(
+        { value: 'doc:example-1', label: '📄 示例文档：智能运维指标体系' },
+        { value: 'chunk:example-1', label: '   └─ ✂️ 切片 1: 服务器硬件指标概述...' },
+        { value: 'chunk:example-2', label: '   └─ ✂️ 切片 2: 数据库性能监控...' }
+      );
+    }
+    
+    return options;
   }
 
   // 创建测试集
@@ -1586,16 +1742,25 @@ class RetrievalLab {
   }
 
   // 显示消息
-  showMessage(message) {
+  showMessage(message, type = 'success') {
+    // 根据类型设置颜色
+    const bgColors = {
+      success: '#52c41a',
+      error: '#ff4d4f',
+      warning: '#faad14',
+      info: '#1890ff'
+    };
+    const bgColor = bgColors[type] || bgColors.success;
+    
     // 创建消息元素
     const messageEl = document.createElement('div');
-    messageEl.className = 'rlab-message';
+    messageEl.className = `rlab-message ${type}`;
     messageEl.textContent = message;
     messageEl.style.cssText = `
       position: fixed;
       top: 20px;
       right: 20px;
-      background: #52c41a;
+      background: ${bgColor};
       color: white;
       padding: 12px 20px;
       border-radius: 4px;
@@ -1611,6 +1776,27 @@ class RetrievalLab {
       messageEl.style.animation = 'slideOutRight 0.3s ease-in';
       setTimeout(() => messageEl.remove(), 300);
     }, 3000);
+  }
+
+  // 切换预期目标内容展开/收起状态
+  toggleExpectedExpand(caseId) {
+    const caseEl = document.getElementById(caseId);
+    if (!caseEl) return;
+    
+    const expandedContent = caseEl.querySelector('.expected-expanded-content');
+    const toggleBtn = caseEl.querySelector('.expected-toggle-btn');
+    
+    if (expandedContent && toggleBtn) {
+      const isExpanded = expandedContent.style.display !== 'none';
+      
+      if (isExpanded) {
+        expandedContent.style.display = 'none';
+        toggleBtn.querySelector('.toggle-icon').textContent = '▼';
+      } else {
+        expandedContent.style.display = 'block';
+        toggleBtn.querySelector('.toggle-icon').textContent = '▲';
+      }
+    }
   }
 
   // 其他方法...

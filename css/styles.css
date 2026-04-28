@@ -3716,6 +3716,7 @@ body {
   overflow: hidden;
   transition: all 0.3s;
   background: white;
+  position: relative;
 }
 
 .test-set-case:hover {
@@ -3829,52 +3830,72 @@ body {
   color: #1890ff;
 }
 
-/* 预期目标区域 - 可点击展开 */
+/* 预期目标区域 - 省略号显示 + 展开/收起 */
 .test-set-case-expected {
   margin-top: 8px;
+  padding: 0 16px;
 }
 
 .expected-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 8px 16px;
+  gap: 8px;
+  padding: 8px 12px;
   background: #fafafa;
   border: 1px solid #e8e8e8;
   border-radius: 6px;
-  cursor: pointer;
   transition: all 0.2s;
-  margin: 0 16px;
 }
 
 .expected-header:hover {
-  background: #f0f0f0;
-  border-color: #d9d9d9;
-}
-
-.expected-toggle-icon {
-  font-size: 10px;
-  color: #999;
-  transition: transform 0.3s;
-}
-
-.expected-header.expanded .expected-toggle-icon {
-  transform: rotate(180deg);
+  background: #f0f9ff;
+  border-color: #b3d8ff;
 }
 
 .expected-content {
-  margin: 8px 16px 16px;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #595959;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* 展开/收起按钮 */
+.expected-toggle-btn {
+  background: none;
+  border: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: #1890ff;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.expected-toggle-btn:hover {
+  background: rgba(24, 144, 255, 0.1);
+}
+
+.toggle-icon {
+  display: inline-block;
+  transition: transform 0.2s;
+}
+
+/* 展开内容区域 */
+.expected-expanded-content {
+  display: none;
+  margin-top: 8px;
   padding: 12px;
   background: #fafafa;
   border: 1px solid #e8e8e8;
   border-radius: 6px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #595959;
-  animation: contentSlideDown 0.3s ease-out;
+  animation: expandSlideDown 0.3s ease-out;
 }
 
-@keyframes contentSlideDown {
+@keyframes expandSlideDown {
   from {
     opacity: 0;
     max-height: 0;
@@ -3885,6 +3906,35 @@ body {
     max-height: 300px;
     overflow: auto;
   }
+}
+
+.expanded-body {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #595959;
+  white-space: pre-wrap;
+  word-break: break-all;
+  margin-bottom: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.expanded-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.btn-xs {
+  font-size: 11px;
+  padding: 2px 8px;
+  color: #1890ff;
+}
+
+.btn-xs:hover {
+  color: #40a9ff;
+  text-decoration: underline;
 }
 
 /* Query 区域 */
@@ -4846,3 +4896,223 @@ body {
 .rts-batch-chunk { display: flex; align-items: flex-start; gap: 10px; padding: 8px; background: var(--bg-secondary); border-radius: var(--radius-sm); }
 .rts-batch-score { font-size: 12px; font-weight: 700; flex-shrink: 0; width: 45px; }
 .rts-batch-content { font-size: 11.5px; color: var(--text-secondary); line-height: 1.5; }
+
+/* ========== 添加测试用例 Modal 样式 ========== */
+
+/* 模态框遮罩层 */
+#add-test-case-modal.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+#add-test-case-modal .modal {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#add-test-case-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+
+#add-test-case-modal .modal-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0;
+}
+
+#add-test-case-modal .modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: #999;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  line-height: 1;
+}
+
+#add-test-case-modal .modal-close:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+
+#add-test-case-modal .modal-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+#add-test-case-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+
+/* 表单样式 */
+#add-test-case-modal .form-group {
+  margin-bottom: 20px;
+}
+
+#add-test-case-modal .form-group:last-child {
+  margin-bottom: 0;
+}
+
+#add-test-case-modal .form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+#add-test-case-modal .form-label .required {
+  color: #ff4d4f;
+  margin-left: 4px;
+}
+
+#add-test-case-modal .form-textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+#add-test-case-modal .form-textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+#add-test-case-modal .form-textarea::placeholder {
+  color: #bfbfbf;
+}
+
+#add-test-case-modal .form-hint {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-top: 6px;
+}
+
+/* 预期召回内容输入框样式 */
+#add-test-case-modal .form-textarea.expected-snippet {
+  min-height: 120px;
+  background: #fafafa;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+#add-test-case-modal .form-textarea.expected-snippet:focus {
+  background: #fff;
+}
+
+/* 按钮样式 */
+#add-test-case-modal .btn {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+}
+
+#add-test-case-modal .btn-default {
+  background: #fff;
+  border-color: #d9d9d9;
+  color: #595959;
+}
+
+#add-test-case-modal .btn-default:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+#add-test-case-modal .btn-primary {
+  background: #1890ff;
+  border-color: #1890ff;
+  color: #fff;
+}
+
+#add-test-case-modal .btn-primary:hover {
+  background: #40a9ff;
+  border-color: #40a9ff;
+}
+
+#add-test-case-modal .btn-primary:disabled {
+  background: #bae7ff;
+  border-color: #bae7ff;
+  cursor: not-allowed;
+}
+
+/* 按钮 loading 状态 */
+#add-test-case-modal .btn-loading {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: btnSpin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+@keyframes btnSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* 成功提示样式 */
+.rlab-message.success {
+  background: #52c41a;
+}
+
+.rlab-message.error {
+  background: #ff4d4f;
+}
