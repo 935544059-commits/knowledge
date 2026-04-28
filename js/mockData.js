@@ -304,7 +304,7 @@ var documents = {
       parseTime: null,
       progress: 65,
       parser: 'general',
-      chunkConfig: { strategy: 'recursive', chunkSize: 384, overlap: 40 }
+      chunkConfig: { isCustom: true, strategy: 'identifier', chunkSize: 256, overlap: 30, identifierPattern: '## |### |#### ' }
     },
     {
       id: 'doc-007',

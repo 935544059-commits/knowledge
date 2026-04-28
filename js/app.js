@@ -822,11 +822,11 @@ class KnowledgeBaseApp {
             <thead><tr>
               <th width="45">#</th>
               <th>文档名称</th>
-              <th width="65">格式</th>
               <th width="70">大小</th>
               <th width="90">解析状态</th>
+              <th width="150">解析切片配置</th>
               <th width="60">切片</th>
-              <th width="130">操作</th>
+              <th width="120">操作</th>
             </tr></thead>
             <tbody>${docs.map((d,i)=>this.renderDocRow(d,i,kb)).join('')}</tbody>
           </table>
@@ -848,12 +848,57 @@ class KnowledgeBaseApp {
   renderDocRow(doc, idx, kb) {
     const fmtIcons = { pdf:'📕', doc:'📘',docx:'📘', excel:'📗',xlsx:'📗', txt:'📄', md:'📝', pptx:'📊' };
     const statusMap = {
-      pending: { text:'待处理', cls:'pending' },
       processing: { text:'解析中', cls:'processing' },
       success: { text:'解析成功', cls:'success' },
       error: { text:'解析失败', cls:'error' }
     };
-    const st = statusMap[doc.status] || statusMap.pending;
+    const st = statusMap[doc.status] || statusMap.processing;
+    
+    // 判断是否自定义配置
+    const isCustom = doc.chunkConfig && doc.chunkConfig.isCustom;
+    const finalConfig = isCustom ? doc.chunkConfig : kb.config;
+    
+    // 获取策略名称
+    const strategyMap = {
+      semantic: '自动分段（按语义）',
+      identifier: '基于标识符切分',
+      recursive: '递归字符切分',
+      structured: '文档结构化切分'
+    };
+    const strategyName = strategyMap[finalConfig.strategy] || strategyMap[finalConfig.chunkStrategy] || finalConfig.chunkStrategyName || '默认';
+    
+    // 获取解析器名称
+    const parserMap = {
+      general: '通用解析',
+      enhanced: '增强解析',
+      layout: 'Layout解析'
+    };
+    const parserName = parserMap[finalConfig.parser] || doc.parser || kb.config.parserName || '通用解析';
+    
+    // 获取分隔符/标识符
+    const separators = finalConfig.separators || finalConfig.separators?.join(', ') || '';
+    const identifierPattern = finalConfig.identifierPattern || '';
+    const displayIdentifiers = identifierPattern || separators || '-';
+    
+    // 处理长标识符截断
+    const truncatedIdentifiers = displayIdentifiers.length > 20 ? displayIdentifiers.substring(0, 20) + '...' : displayIdentifiers;
+    
+    // 获取块大小和重叠
+    const chunkSize = finalConfig.chunkSize || finalConfig.chunk_size || kb.config.chunkSize || 512;
+    const overlap = finalConfig.overlap || finalConfig.overlap_size || kb.config.overlap || 50;
+    
+    // Tooltip内容
+    const tooltipTitle = isCustom ? '[文档自定义配置]' : '[继承自库配置]';
+    const tooltipContent = `
+      <div class="tooltip-config-item"><span class="tooltip-label">解析器：</span><span class="tooltip-value">${parserName}</span></div>
+      <div class="tooltip-config-item"><span class="tooltip-label">切片策略：</span><span class="tooltip-value">${strategyName}</span></div>
+      <div class="tooltip-config-item"><span class="tooltip-label">关键标识符：</span><span class="tooltip-value">${displayIdentifiers}</span></div>
+      <div class="tooltip-config-item"><span class="tooltip-label">块大小/重叠：</span><span class="tooltip-value">${chunkSize} / ${overlap}</span></div>
+    `;
+    
+    // 错误弹窗内容
+    const errorModalId = `error-modal-${doc.id}`;
+    
     return `
       <tr>
         <td>${idx+1}</td>
@@ -863,23 +908,67 @@ class KnowledgeBaseApp {
             <span class="doc-link" onclick="app.navigateTo('chunks',{kb:${JSON.stringify(kb).replace(/"/g,'&quot;')},doc:${JSON.stringify(doc).replace(/"/g,'&quot;')}})">${doc.name}</span>
           </div>
         </td>
-        <td><span class="tag tag-blue" style="font-size:11px;padding:1px 6px;">${doc.format.toUpperCase()}</span></td>
         <td>${doc.size}</td>
         <td>
-          <span class="status-badge sb-${st.cls}">
-            <span class="sb-dot"></span>${st.text}
-            ${doc.status==='processing' && doc.progress ? `<span class="sb-progress">${doc.progress}%</span>` : ''}
-          </span>
+          ${doc.status === 'processing' ? `
+            <div class="status-processing">
+              <div class="progress-ring">
+                <svg class="pr-svg" viewBox="0 0 36 36">
+                  <circle class="pr-bg" cx="18" cy="18" r="16" fill="none" stroke="#e8e8e8" stroke-width="3"/>
+                  <circle class="pr-progress" cx="18" cy="18" r="16" fill="none" stroke="#1890ff" stroke-width="3" stroke-linecap="round" stroke-dasharray="${doc.progress * 1.005} ${100.5 - doc.progress * 1.005}" transform="rotate(-90 18 18)"/>
+                </svg>
+                <span class="pr-text">${doc.progress}%</span>
+              </div>
+            </div>
+          ` : doc.status === 'error' ? `
+            <span class="status-badge sb-${st.cls}" onclick="document.getElementById('${errorModalId}').classList.add('active')">
+              <span class="sb-dot"></span>${st.text}
+            </span>
+          ` : `
+            <span class="status-badge sb-${st.cls}">
+              <span class="sb-dot"></span>${st.text}
+            </span>
+          `}
+        </td>
+        <td>
+          <div class="config-cell" onmouseenter="this.querySelector('.config-tooltip').style.display='block'" onmouseleave="this.querySelector('.config-tooltip').style.display='none'">
+            <div class="config-badge ${isCustom ? 'badge-custom' : 'badge-inherit'}">
+              ${isCustom ? `自定义：${strategyName.substring(0, 6)}${strategyName.length > 6 ? '...' : ''}` : '继承全局'}
+            </div>
+            <div class="config-params">${chunkSize} / ${overlap}</div>
+            <div class="config-tooltip">
+              <div class="tooltip-title">${tooltipTitle}</div>
+              <div class="tooltip-content">${tooltipContent}</div>
+            </div>
+          </div>
         </td>
         <td>${doc.chunkCount || '-'}</td>
         <td>
           <div class="doc-actions">
-            <button class="btn btn-text btn-sm" onclick="app.navigateTo('chunks',{kb:app.currentKB,doc:${JSON.stringify(doc).replace(/"/g,'&quot;')}})">切片</button>
-            ${doc.status==='error' ? '<button class="btn btn-text btn-sm">重试</button>' : ''}
+            <button class="btn btn-text btn-sm ${doc.status === 'success' ? 'btn-highlight' : ''}" onclick="app.navigateTo('chunks',{kb:app.currentKB,doc:${JSON.stringify(doc).replace(/"/g,'&quot;')}})">切片</button>
+            <button class="btn btn-text btn-sm" onclick="app.openDocConfigModal('${doc.id}', ${JSON.stringify(kb).replace(/"/g,'&quot;')})">配置</button>
+            ${doc.status === 'error' ? `<button class="btn btn-text btn-sm" onclick="app.retryParseDoc('${doc.id}')">重试</button>` : ''}
             <button class="btn btn-text btn-sm btn-danger" onclick="if(confirm('确定删除？'))alert('已删除')">删除</button>
           </div>
         </td>
       </tr>
+      ${doc.status === 'error' && doc.errorMsg ? `
+        <div class="modal-overlay" id="${errorModalId}">
+          <div class="modal modal-sm">
+            <div class="modal-header"><h3 class="modal-title">解析错误详情</h3><button class="modal-close" onclick="document.getElementById('${errorModalId}').classList.remove('active')">×</button></div>
+            <div class="modal-body">
+              <div class="error-log">
+                <div class="error-title">❌ 解析失败</div>
+                <div class="error-message">${doc.errorMsg}</div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button class="btn btn-default" onclick="document.getElementById('${errorModalId}').classList.remove('active')">关闭</button>
+              <button class="btn btn-primary" onclick="document.getElementById('${errorModalId}').classList.remove('active');app.retryParseDoc('${doc.id}')">重试解析</button>
+            </div>
+          </div>
+        </div>
+      ` : ''}
     `;
   }
 
@@ -1020,6 +1109,196 @@ class KnowledgeBaseApp {
   closeUploadModal() {
     const m = document.getElementById('up-modal');
     if(m){ m.classList.remove('active'); setTimeout(()=>m.remove(),300); }
+  }
+
+  // 打开文档配置编辑弹窗
+  openDocConfigModal(docId, kb) {
+    const mc = document.getElementById('modal-container');
+    const docs = (window.documents || {})[kb.id] || [];
+    const doc = docs.find(d => d.id === docId);
+    if (!doc) return;
+    
+    // 判断是否自定义配置
+    const isCustom = doc.chunkConfig && doc.chunkConfig.isCustom;
+    const finalConfig = isCustom ? doc.chunkConfig : kb.config;
+    
+    mc.innerHTML = `
+      <div class="modal-overlay active" id="doc-config-modal">
+        <div class="modal modal-lg">
+          <div class="modal-header"><h3 class="modal-title">文档解析配置</h3><button class="modal-close" onclick="app.closeDocConfigModal()">×</button></div>
+          <div class="modal-body">
+            <!-- 配置模式切换 -->
+            <div class="config-mode-toggle">
+              <span class="cmt-label">解析配置：</span>
+              <label class="cmt-option ${!isCustom ? 'cmt-active' : ''}" onclick="app.toggleDocConfigMode(false, '${docId}')">
+                <input type="radio" name="docConfigMode" value="inherit" ${!isCustom ? 'checked' : ''} style="display:none;">
+                <span class="cmt-radio"></span>
+                <span class="cmt-text">
+                  <strong>继承知识库配置</strong>
+                  <small>使用「${kb.config.parserName}」+ 「${kb.config.chunkStrategyName || '自动分段'}」(${kb.config.chunkSize}/${kb.config.overlap})</small>
+                </span>
+              </label>
+              <label class="cmt-option ${isCustom ? 'cmt-active' : ''}" onclick="app.toggleDocConfigMode(true, '${docId}')">
+                <input type="radio" name="docConfigMode" value="custom" ${isCustom ? 'checked' : ''} style="display:none;">
+                <span class="cmt-radio"></span>
+                <span class="cmt-text">
+                  <strong>自定义配置</strong>
+                  <small>为此文档单独指定解析器和切片策略</small>
+                </span>
+              </label>
+            </div>
+
+            <!-- 自定义配置区 -->
+            <div class="custom-config-area" id="doc-custom-config" style="${isCustom ? '' : 'display:none'};">
+              <div class="wf-section" style="margin-bottom:12px;">
+                <label class="wf-section-label" style="font-size:13px;">文档解析器</label>
+                <div class="parser-cards-sm">
+                  ${(window.parserOptions || []).map(p => `
+                    <div class="parser-card-sm ${finalConfig.parser === p.value ? 'pcs-active' : ''}" data-parser="${p.value}">
+                      <span class="pcs-icon">${p.icon}</span>${p.label}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+              <div id="doc-chunk-config"></div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-default" onclick="app.closeDocConfigModal()">取消</button>
+            <button class="btn btn-primary" onclick="app.saveDocConfig('${docId}', ${JSON.stringify(kb).replace(/"/g,'&quot;')})">保存配置</button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    setTimeout(() => {
+      // 绑定自定义解析器选择
+      document.querySelectorAll('.parser-card-sm').forEach(card => {
+        card.addEventListener('click', () => {
+          document.querySelectorAll('.parser-card-sm').forEach(c => c.classList.remove('pcs-active'));
+          card.classList.add('pcs-active');
+        });
+      });
+      // 初始化ChunkConfig组件
+      if (isCustom) {
+        this._docChunkCfgComp = new ChunkConfig('doc-chunk-config', {
+          onChange: (cfg) => { this._docCustomChunkCfg = cfg; },
+          initialConfig: finalConfig
+        });
+      }
+    }, 0);
+  }
+
+  toggleDocConfigMode(useCustom, docId) {
+    const customArea = document.getElementById('doc-custom-config');
+    if (customArea) customArea.style.display = useCustom ? '' : 'none';
+    
+    // 更新 radio 样式
+    document.querySelectorAll('.cmt-option').forEach((opt, i) => {
+      opt.classList.toggle('cmt-active', (i === 1) === useCustom);
+    });
+    
+    // 初始化/销毁 ChunkConfig 组件
+    if (useCustom && !this._docChunkCfgComp) {
+      setTimeout(() => {
+        const kb = this.currentKB;
+        const docs = (window.documents || {})[kb.id] || [];
+        const doc = docs.find(d => d.id === docId);
+        const finalConfig = doc?.chunkConfig || kb.config;
+        
+        this._docChunkCfgComp = new ChunkConfig('doc-chunk-config', {
+          onChange: (cfg) => { this._docCustomChunkCfg = cfg; },
+          initialConfig: finalConfig
+        });
+      }, 50);
+    }
+  }
+
+  closeDocConfigModal() {
+    const m = document.getElementById('doc-config-modal');
+    if(m){ m.classList.remove('active'); setTimeout(()=>m.remove(),300); }
+    this._docChunkCfgComp = null;
+    this._docCustomChunkCfg = null;
+  }
+
+  saveDocConfig(docId, kb) {
+    const useCustom = document.querySelector('.cmt-option.cmt-active input').value === 'custom';
+    const parser = document.querySelector('.parser-card-sm.pcs-active')?.dataset.parser || kb.config.parser;
+    
+    // 更新文档配置
+    const docs = (window.documents || {})[kb.id] || [];
+    const docIndex = docs.findIndex(d => d.id === docId);
+    if (docIndex !== -1) {
+      if (useCustom) {
+        docs[docIndex].chunkConfig = {
+          ...this._docCustomChunkCfg,
+          isCustom: true,
+          parser: parser
+        };
+      } else {
+        docs[docIndex].chunkConfig = null;
+      }
+      // 重置解析状态为解析中
+      docs[docIndex].status = 'processing';
+      docs[docIndex].progress = 0;
+      docs[docIndex].chunkCount = 0;
+      docs[docIndex].parseTime = null;
+      docs[docIndex].errorMsg = null;
+    }
+    
+    this.closeDocConfigModal();
+    
+    // 模拟异步解析过程
+    this.simulateDocParse(docId, kb.id);
+    
+    alert('✅ 配置已保存，文档正在重新解析...');
+  }
+
+  simulateDocParse(docId, kbId) {
+    const docs = (window.documents || {})[kbId] || [];
+    const docIndex = docs.findIndex(d => d.id === docId);
+    if (docIndex === -1) return;
+    
+    // 模拟进度
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 20 + 5;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(interval);
+        docs[docIndex].status = 'success';
+        docs[docIndex].progress = 100;
+        docs[docIndex].chunkCount = Math.floor(Math.random() * 30) + 10;
+        docs[docIndex].parseTime = new Date().toLocaleString();
+      } else {
+        docs[docIndex].progress = Math.floor(progress);
+      }
+      
+      // 刷新页面
+      if (this.currentPage === 'detail' && this.currentKB.id === kbId) {
+        this.navigateTo('detail', { kb: this.currentKB });
+      }
+    }, 500);
+  }
+
+  // 重试解析文档
+  retryParseDoc(docId) {
+    const kb = this.currentKB;
+    const docs = (window.documents || {})[kb.id] || [];
+    const docIndex = docs.findIndex(d => d.id === docId);
+    if (docIndex !== -1) {
+      docs[docIndex].status = 'processing';
+      docs[docIndex].progress = 0;
+      docs[docIndex].chunkCount = 0;
+      docs[docIndex].parseTime = null;
+      docs[docIndex].errorMsg = null;
+      
+      // 刷新页面
+      this.navigateTo('detail', { kb: kb });
+      
+      // 模拟异步解析过程
+      this.simulateDocParse(docId, kb.id);
+    }
   }
 
   submitUploadDocs() {

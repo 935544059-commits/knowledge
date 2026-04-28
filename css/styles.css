@@ -3292,6 +3292,249 @@ body {
   visibility: visible;
 }
 
+/* ========== 文档列表配置列样式 ========== */
+
+/* 配置单元格 */
+.config-cell {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+/* 配置Badge */
+.config-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.badge-inherit {
+  background: #f5f5f5;
+  color: #8c8c8c;
+  border: 1px solid #d9d9d9;
+}
+
+.badge-custom {
+  background: #f9f0ff;
+  color: #722ed1;
+  border: 1px solid #d3adf7;
+}
+
+/* 配置参数 */
+.config-params {
+  font-size: 10.5px;
+  color: #8c8c8c;
+  margin-top: 2px;
+}
+
+/* 配置Tooltip */
+.config-tooltip {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  padding: 12px;
+  min-width: 240px;
+  z-index: 1000;
+}
+
+.config-tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 12px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: transparent transparent #e8e8e8 transparent;
+}
+
+.config-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 13px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #fff transparent;
+}
+
+.tooltip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tooltip-config-item {
+  display: flex;
+  font-size: 12px;
+}
+
+.tooltip-label {
+  color: #8c8c8c;
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.tooltip-value {
+  color: #262626;
+  flex: 1;
+  word-break: break-all;
+}
+
+/* 进度环 */
+.status-processing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-ring {
+  position: relative;
+  width: 28px;
+  height: 28px;
+}
+
+.pr-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.pr-bg {
+  stroke: #e8e8e8;
+}
+
+.pr-progress {
+  stroke: #1890ff;
+  transition: stroke-dasharray 0.3s ease;
+  animation: spin-progress 2s linear infinite;
+}
+
+@keyframes spin-progress {
+  from {
+    transform: rotate(-90deg);
+    transform-origin: center;
+  }
+  to {
+    transform: rotate(270deg);
+    transform-origin: center;
+  }
+}
+
+.pr-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  color: #1890ff;
+  font-weight: 500;
+}
+
+/* 错误日志弹窗 */
+.error-log {
+  padding: 16px;
+  background: #fff1f0;
+  border-radius: 8px;
+}
+
+.error-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ff4d4f;
+  margin-bottom: 8px;
+}
+
+.error-message {
+  font-size: 12px;
+  color: #d93026;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+/* 按钮高亮样式 */
+.btn-highlight {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.btn-highlight:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}
+
+/* 状态Badge优化 */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.status-badge:hover {
+  opacity: 0.8;
+}
+
+.sb-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.sb-success .sb-dot {
+  background: #52c41a;
+}
+
+.sb-success {
+  background: #f6ffed;
+  color: #52c41a;
+}
+
+.sb-pending .sb-dot {
+  background: #faad14;
+}
+
+.sb-pending {
+  background: #fffbe6;
+  color: #faad14;
+}
+
+.sb-processing .sb-dot {
+  background: #1890ff;
+}
+
+.sb-processing {
+  background: #e6f7ff;
+  color: #1890ff;
+}
+
+.sb-error .sb-dot {
+  background: #ff4d4f;
+}
+
+.sb-error {
+  background: #fff1f0;
+  color: #ff4d4f;
+}
+
 /* 加载状态样式 */
 .test-set-case-loading {
   margin-top: 12px;
