@@ -45,15 +45,7 @@ class RetrievalTest {
             <span class="rt-title">${isCompare ? '对比测试' : '召回测试'}</span>
             ${this.options.kbName ? `<span class="rt-kb-tag">${this.options.kbName}</span>` : ''}
           </div>
-          <div class="rt-header-bottom">
-            <div class="rt-scope-selector">
-              <span class="rt-scope-label">检索范围：</span>
-              <select class="rt-scope-select" id="rt-scope">
-                <option value="current" ${this.config.scope === 'current' ? 'selected' : ''}>当前知识库</option>
-                <option value="all" ${this.config.scope === 'all' ? 'selected' : ''}>全部知识库</option>
-              </select>
-            </div>
-          </div>
+
         </div>
 
         <!-- 查询与配置区 -->
